@@ -15,11 +15,16 @@ class KMeans:
     def _init_centroids(self, data):
         if self.init_centroids == "kmeans++":
             centroids = cp.empty((self.k, data.shape[1]))
-            centroids[0] = data[np.random.choice(len(data))]
+            centroids[0] = data[cp.random.choice(len(data),1)]
+            # starting from a vector of infinity distances
+            distances = cp.full(len(data), cp.inf)
             for i in range(self.k - 1):
-                dist = cp.min(distance_matrix(data, centroids[:i + 1]), axis=1)
-                argmax = cp.argmax(dist)
-                centroids[i + 1] = data[argmax]
+                # compute the minimum of current distance and the distance to the last observed centroid
+                distances = cp.minimum(distances, cp.linalg.norm(data - centroids[i], axis=1))
+                # sample a new centroid based on the new distance
+                # centroids[i+1] = data[cp.random.choice(len(data),1,p=distances/cp.sum(distances))]
+                centroids[i+1] = data[cp.argmax(distances)]
+                
         elif self.init_centroids == "PCA":
             pca = PCA(n_components=self.k)
             data_projected = pca.fit_transform(data)
